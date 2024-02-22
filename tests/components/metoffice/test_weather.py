@@ -186,19 +186,6 @@ async def test_one_weather_site_running(
     assert weather.attributes.get("wind_bearing") == "SSE"
     assert weather.attributes.get("humidity") == 50
 
-    # Forecasts added - just pick out 1 entry to check
-    assert len(weather.attributes.get("forecast")) == 35
-
-    assert (
-        weather.attributes.get("forecast")[26]["datetime"]
-        == "2020-04-28T21:00:00+00:00"
-    )
-    assert weather.attributes.get("forecast")[26]["condition"] == "cloudy"
-    assert weather.attributes.get("forecast")[26]["precipitation_probability"] == 9
-    assert weather.attributes.get("forecast")[26]["temperature"] == 10
-    assert weather.attributes.get("forecast")[26]["wind_speed"] == 6.44
-    assert weather.attributes.get("forecast")[26]["wind_bearing"] == "NNE"
-
     # Wavertree daily weather platform expected results
     weather = hass.states.get("weather.met_office_wavertree_daily")
     assert weather
@@ -208,19 +195,6 @@ async def test_one_weather_site_running(
     assert weather.attributes.get("wind_speed") == 14.48
     assert weather.attributes.get("wind_bearing") == "SSE"
     assert weather.attributes.get("humidity") == 50
-
-    # Also has Forecasts added - again, just pick out 1 entry to check
-    # ensures that daily filters out multiple results per day
-    assert len(weather.attributes.get("forecast")) == 4
-
-    assert (
-        weather.attributes.get("forecast")[3]["datetime"] == "2020-04-29T12:00:00+00:00"
-    )
-    assert weather.attributes.get("forecast")[3]["condition"] == "rainy"
-    assert weather.attributes.get("forecast")[3]["precipitation_probability"] == 59
-    assert weather.attributes.get("forecast")[3]["temperature"] == 13
-    assert weather.attributes.get("forecast")[3]["wind_speed"] == 20.92
-    assert weather.attributes.get("forecast")[3]["wind_bearing"] == "SE"
 
 
 @pytest.mark.freeze_time(datetime.datetime(2020, 4, 25, 12, tzinfo=datetime.UTC))
@@ -290,19 +264,6 @@ async def test_two_weather_sites_running(
     assert weather.attributes.get("wind_bearing") == "SSE"
     assert weather.attributes.get("humidity") == 50
 
-    # Forecasts added - just pick out 1 entry to check
-    assert len(weather.attributes.get("forecast")) == 35
-
-    assert (
-        weather.attributes.get("forecast")[18]["datetime"]
-        == "2020-04-27T21:00:00+00:00"
-    )
-    assert weather.attributes.get("forecast")[18]["condition"] == "clear-night"
-    assert weather.attributes.get("forecast")[18]["precipitation_probability"] == 1
-    assert weather.attributes.get("forecast")[18]["temperature"] == 9
-    assert weather.attributes.get("forecast")[18]["wind_speed"] == 6.44
-    assert weather.attributes.get("forecast")[18]["wind_bearing"] == "NW"
-
     # Wavertree daily weather platform expected results
     weather = hass.states.get("weather.met_office_wavertree_daily")
     assert weather
@@ -313,19 +274,6 @@ async def test_two_weather_sites_running(
     assert weather.attributes.get("wind_speed_unit") == "km/h"
     assert weather.attributes.get("wind_bearing") == "SSE"
     assert weather.attributes.get("humidity") == 50
-
-    # Also has Forecasts added - again, just pick out 1 entry to check
-    # ensures that daily filters out multiple results per day
-    assert len(weather.attributes.get("forecast")) == 4
-
-    assert (
-        weather.attributes.get("forecast")[3]["datetime"] == "2020-04-29T12:00:00+00:00"
-    )
-    assert weather.attributes.get("forecast")[3]["condition"] == "rainy"
-    assert weather.attributes.get("forecast")[3]["precipitation_probability"] == 59
-    assert weather.attributes.get("forecast")[3]["temperature"] == 13
-    assert weather.attributes.get("forecast")[3]["wind_speed"] == 20.92
-    assert weather.attributes.get("forecast")[3]["wind_bearing"] == "SE"
 
     # King's Lynn 3-hourly weather platform expected results
     weather = hass.states.get("weather.met_office_king_s_lynn_3_hourly")
@@ -338,19 +286,6 @@ async def test_two_weather_sites_running(
     assert weather.attributes.get("wind_bearing") == "E"
     assert weather.attributes.get("humidity") == 60
 
-    # Also has Forecast added - just pick out 1 entry to check
-    assert len(weather.attributes.get("forecast")) == 35
-
-    assert (
-        weather.attributes.get("forecast")[18]["datetime"]
-        == "2020-04-27T21:00:00+00:00"
-    )
-    assert weather.attributes.get("forecast")[18]["condition"] == "cloudy"
-    assert weather.attributes.get("forecast")[18]["precipitation_probability"] == 9
-    assert weather.attributes.get("forecast")[18]["temperature"] == 10
-    assert weather.attributes.get("forecast")[18]["wind_speed"] == 11.27
-    assert weather.attributes.get("forecast")[18]["wind_bearing"] == "SE"
-
     # King's Lynn daily weather platform expected results
     weather = hass.states.get("weather.met_office_king_s_lynn_daily")
     assert weather
@@ -361,19 +296,6 @@ async def test_two_weather_sites_running(
     assert weather.attributes.get("wind_speed_unit") == "km/h"
     assert weather.attributes.get("wind_bearing") == "ESE"
     assert weather.attributes.get("humidity") == 75
-
-    # All should have Forecast added - again, just picking out 1 entry to check
-    # ensures daily filters out multiple results per day
-    assert len(weather.attributes.get("forecast")) == 4
-
-    assert (
-        weather.attributes.get("forecast")[2]["datetime"] == "2020-04-28T12:00:00+00:00"
-    )
-    assert weather.attributes.get("forecast")[2]["condition"] == "cloudy"
-    assert weather.attributes.get("forecast")[2]["precipitation_probability"] == 14
-    assert weather.attributes.get("forecast")[2]["temperature"] == 11
-    assert weather.attributes.get("forecast")[2]["wind_speed"] == 11.27
-    assert weather.attributes.get("forecast")[2]["wind_bearing"] == "ESE"
 
 
 @pytest.mark.freeze_time(datetime.datetime(2020, 4, 25, 12, tzinfo=datetime.UTC))
