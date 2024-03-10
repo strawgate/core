@@ -45,13 +45,11 @@ from homeassistant.const import (
     CONF_IP_ADDRESS,
     CONF_NAME,
     CONF_PORT,
-    EVENT_HOMEASSISTANT_STARTED,
     EVENT_HOMEASSISTANT_STOP,
     SERVICE_RELOAD,
 )
 from homeassistant.core import (
     CALLBACK_TYPE,
-    CoreState,
     HomeAssistant,
     ServiceCall,
     State,
@@ -75,6 +73,7 @@ from homeassistant.helpers.service import (
     async_extract_referenced_entity_ids,
     async_register_admin_service,
 )
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import IntegrationNotFound, async_get_integration
 
@@ -357,12 +356,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         homekit=homekit, pairing_qr=None, pairing_qr_secret=None
     )
     hass.data[DOMAIN][entry.entry_id] = entry_data
-
-    if hass.state is CoreState.running:
-        await homekit.async_start()
-    else:
-        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, homekit.async_start)
-
+    entry.async_on_unload(async_at_started(hass, homekit.async_start))
     return True
 
 
