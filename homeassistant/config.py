@@ -1547,6 +1547,38 @@ async def async_process_component_config(  # noqa: C901
     for p_name, p_config in config_per_platform(config, domain):
         # Validate component specific platform schema
         platform_path = f"{p_name}.{domain}"
+        if p_name is not None:
+            try:
+                p_integration = await async_get_integration_with_requirements(
+                    hass, p_name
+                )
+            except (RequirementsNotFound, IntegrationNotFound) as exc:
+                exc_info = ConfigExceptionInfo(
+                    exc,
+                    ConfigErrorTranslationKey.PLATFORM_COMPONENT_LOAD_ERR,
+                    platform_path,
+                    p_config,
+                    integration_docs,
+                )
+                config_exceptions.append(exc_info)
+                continue
+
+            # We always load the platform before running validation
+            # since the validation might do a late import of the platform
+            # which would do blocking I/O in the event loop.
+            try:
+                platform = await p_integration.async_get_platform(domain)
+            except LOAD_EXCEPTIONS as exc:
+                exc_info = ConfigExceptionInfo(
+                    exc,
+                    ConfigErrorTranslationKey.PLATFORM_COMPONENT_LOAD_EXC,
+                    platform_path,
+                    p_config,
+                    integration_docs,
+                )
+                config_exceptions.append(exc_info)
+                continue
+
         try:
             p_validated = component_platform_schema(p_config)
         except vol.Invalid as exc:
@@ -1575,32 +1607,6 @@ async def async_process_component_config(  # noqa: C901
         # (the automation component is one of them)
         if p_name is None:
             platforms.append(p_validated)
-            continue
-
-        try:
-            p_integration = await async_get_integration_with_requirements(hass, p_name)
-        except (RequirementsNotFound, IntegrationNotFound) as exc:
-            exc_info = ConfigExceptionInfo(
-                exc,
-                ConfigErrorTranslationKey.PLATFORM_COMPONENT_LOAD_ERR,
-                platform_path,
-                p_config,
-                integration_docs,
-            )
-            config_exceptions.append(exc_info)
-            continue
-
-        try:
-            platform = await p_integration.async_get_platform(domain)
-        except LOAD_EXCEPTIONS as exc:
-            exc_info = ConfigExceptionInfo(
-                exc,
-                ConfigErrorTranslationKey.PLATFORM_COMPONENT_LOAD_EXC,
-                platform_path,
-                p_config,
-                integration_docs,
-            )
-            config_exceptions.append(exc_info)
             continue
 
         # Validate platform specific schema
