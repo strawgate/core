@@ -638,7 +638,10 @@ class EntityRegistry(BaseRegistry):
             minor_version=STORAGE_VERSION_MINOR,
         )
         self.hass.bus.async_listen(
-            EVENT_DEVICE_REGISTRY_UPDATED, self.async_device_modified
+            EVENT_DEVICE_REGISTRY_UPDATED,
+            self.async_device_modified,
+            event_filter=self._async_filter_device_modified,
+            run_immediately=True,
         )
 
     @callback
@@ -889,6 +892,12 @@ class EntityRegistry(BaseRegistry):
         self.async_schedule_save()
 
     @callback
+    def _async_filter_device_modified(self, event: Event) -> bool:
+        """Filter the device registry updated event."""
+        # Ignore "create" action
+        return event.data["action"] in ("update", "remove")
+
+    @callback
     def async_device_modified(self, event: Event) -> None:
         """Handle the removal or update of a device.
 
@@ -906,10 +915,7 @@ class EntityRegistry(BaseRegistry):
                 self.async_remove(entity.entity_id)
             return
 
-        if event.data["action"] != "update":
-            # Ignore "create" action
-            return
-
+        # Filter will ensure action is "update"
         device_registry = dr.async_get(self.hass)
         device = device_registry.async_get(event.data["device_id"])
 
