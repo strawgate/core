@@ -85,7 +85,6 @@ class SetupPhases(StrEnum):
 
     TOTAL = "total"
     BASE_PLATFORM = "base_platform"
-    IMPORT_PLATFORMS = "import_platforms"
     PLATFORMS = "platforms"
 
 

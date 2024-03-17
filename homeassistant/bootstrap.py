@@ -942,7 +942,7 @@ async def _async_set_up_integrations(
             domain: (
                 timings.get(SetupPhases.TOTAL, 0)
                 + timings.get(SetupPhases.PLATFORMS, 0)
-                - timings.get(SetupPhases.IMPORT_PLATFORMS, 0)
+                - integration.platform_import_time
                 - timings.get(SetupPhases.BASE_PLATFORM, 0)
             )
             for domain, timings in sorted(
@@ -950,5 +950,6 @@ async def _async_set_up_integrations(
                 key=lambda items: items[1].get(SetupPhases.TOTAL, 0),
                 reverse=True,
             )
+            if (integration := integration_cache.get(domain))
         },
     )

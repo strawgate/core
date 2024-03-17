@@ -755,6 +755,7 @@ class Integration:
         ]
         self._missing_platforms_cache = missing_platforms_cache
         self._top_level_files = top_level_files or set()
+        self.platform_import_time = 0.0
         _LOGGER.info("Loaded %s from %s", self.domain, pkg_path)
 
     @cached_property
@@ -1104,12 +1105,13 @@ class Integration:
             self._import_futures[platform_name] = import_future
             import_futures.append((platform_name, import_future))
 
-        if load_executor_platforms or load_event_loop_platforms:
-            if debug := _LOGGER.isEnabledFor(logging.DEBUG):
-                start = time.perf_counter()
+        start = 0.0
+        end = 0.0
 
+        if load_executor_platforms or load_event_loop_platforms:
             try:
                 if load_executor_platforms:
+                    start = time.perf_counter()
                     try:
                         platforms.update(
                             await self.hass.async_add_import_executor_job(
@@ -1126,6 +1128,8 @@ class Integration:
                         # If importing in the executor deadlocks because there is a circular
                         # dependency, we fall back to the event loop.
                         load_event_loop_platforms.extend(load_executor_platforms)
+                    end = time.perf_counter()
+                    self.platform_import_time += end - start
 
                 if load_event_loop_platforms:
                     platforms.update(self._load_platforms(platform_names))
@@ -1147,13 +1151,13 @@ class Integration:
                 for platform_name, _ in import_futures:
                     self._import_futures.pop(platform_name)
 
-                if debug:
+                if _LOGGER.isEnabledFor:
                     _LOGGER.debug(
                         "Importing platforms for %s executor=%s loop=%s took %.2fs",
                         domain,
                         load_executor_platforms,
                         load_event_loop_platforms,
-                        time.perf_counter() - start,
+                        end - start,
                     )
 
         if in_progress_imports:

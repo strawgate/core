@@ -1840,8 +1840,7 @@ class ConfigEntries:
     ) -> None:
         """Forward the setup of an entry to platforms."""
         integration = await loader.async_get_integration(self.hass, entry.domain)
-        with async_start_setup(self.hass, entry.domain, SetupPhases.IMPORT_PLATFORMS):
-            await integration.async_get_platforms(platforms)
+        await integration.async_get_platforms(platforms)
         with async_start_setup(self.hass, entry.domain, SetupPhases.PLATFORMS):
             await asyncio.gather(
                 *(
