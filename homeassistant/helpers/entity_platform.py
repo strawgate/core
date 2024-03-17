@@ -32,7 +32,7 @@ from homeassistant.core import (
 )
 from homeassistant.exceptions import HomeAssistantError, PlatformNotReady
 from homeassistant.generated import languages
-from homeassistant.setup import async_start_setup
+from homeassistant.setup import SetupPhases, async_start_setup
 from homeassistant.util.async_ import create_eager_task
 
 from . import (
@@ -341,7 +341,7 @@ class EntityPlatform:
             self.platform_name,
             SLOW_SETUP_WARNING,
         )
-        with async_start_setup(hass, [full_name]):
+        with async_start_setup(hass, full_name, SetupPhases.PLATFORMS):
             try:
                 awaitable = async_create_setup_awaitable()
                 if asyncio.iscoroutine(awaitable):

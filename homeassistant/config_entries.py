@@ -25,6 +25,8 @@ from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 
 from async_interrupt import interrupt
 
+from homeassistant.setup import SetupPhases, async_start_setup
+
 from . import data_entry_flow, loader
 from .components import persistent_notification
 from .const import EVENT_HOMEASSISTANT_STARTED, EVENT_HOMEASSISTANT_STOP, Platform
@@ -1838,16 +1840,18 @@ class ConfigEntries:
     ) -> None:
         """Forward the setup of an entry to platforms."""
         integration = await loader.async_get_integration(self.hass, entry.domain)
-        await integration.async_get_platforms(platforms)
-        await asyncio.gather(
-            *(
-                create_eager_task(
-                    self.async_forward_entry_setup(entry, platform),
-                    name=f"config entry forward setup {entry.title} {entry.domain} {entry.entry_id} {platform}",
+        with async_start_setup(self.hass, entry.domain, SetupPhases.IMPORT_PLATFORMS):
+            await integration.async_get_platforms(platforms)
+        with async_start_setup(self.hass, entry.domain, SetupPhases.PLATFORMS):
+            await asyncio.gather(
+                *(
+                    create_eager_task(
+                        self.async_forward_entry_setup(entry, platform),
+                        name=f"config entry forward setup {entry.title} {entry.domain} {entry.entry_id} {platform}",
+                    )
+                    for platform in platforms
                 )
-                for platform in platforms
             )
-        )
 
     async def async_forward_entry_setup(
         self, entry: ConfigEntry, domain: Platform | str
@@ -1860,7 +1864,10 @@ class ConfigEntries:
         """
         # Setup Component if not set up yet
         if domain not in self.hass.config.components:
-            result = await async_setup_component(self.hass, domain, self._hass_config)
+            with async_start_setup(self.hass, entry.domain, SetupPhases.BASE_PLATFORM):
+                result = await async_setup_component(
+                    self.hass, domain, self._hass_config
+                )
 
             if not result:
                 return False

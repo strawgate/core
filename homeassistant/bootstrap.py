@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-from datetime import timedelta
 from functools import partial
 from itertools import chain
 import logging
 import logging.handlers
-from operator import contains, itemgetter
+from operator import contains
 import os
 import platform
 import sys
@@ -83,6 +82,7 @@ from .setup import (
     BASE_PLATFORMS,
     DATA_SETUP_STARTED,
     DATA_SETUP_TIME,
+    SetupPhases,
     async_notify_setup_error,
     async_set_domains_to_be_loaded,
     async_setup_component,
@@ -840,7 +840,9 @@ async def _async_set_up_integrations(
     """Set up all the integrations."""
     setup_started: dict[str, float] = {}
     hass.data[DATA_SETUP_STARTED] = setup_started
-    setup_time: dict[str, timedelta] = hass.data.setdefault(DATA_SETUP_TIME, {})
+    setup_time: dict[str, dict[SetupPhases, float]] = hass.data.setdefault(
+        DATA_SETUP_TIME, {}
+    )
 
     watcher = _WatchPendingSetups(hass, setup_started)
     watcher.async_start()
@@ -936,5 +938,17 @@ async def _async_set_up_integrations(
 
     _LOGGER.debug(
         "Integration setup times: %s",
-        dict(sorted(setup_time.items(), key=itemgetter(1))),
+        {
+            domain: (
+                timings.get(SetupPhases.TOTAL, 0)
+                + timings.get(SetupPhases.PLATFORMS, 0)
+                - timings.get(SetupPhases.IMPORT_PLATFORMS, 0)
+                - timings.get(SetupPhases.BASE_PLATFORM, 0)
+            )
+            for domain, timings in sorted(
+                setup_time.items(),
+                key=lambda items: items[1].get(SetupPhases.TOTAL, 0),
+                reverse=True,
+            )
+        },
     )

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable, Generator, Iterable
+from collections.abc import Awaitable, Callable, Generator
 import contextlib
+import contextvars
+from enum import StrEnum
 import logging.handlers
 import time
 from timeit import default_timer as timer
@@ -31,6 +33,9 @@ from .helpers.issue_registry import IssueSeverity, async_create_issue
 from .helpers.typing import ConfigType
 from .util import ensure_unique_string
 from .util.async_ import create_eager_task
+
+current_setup_unique = contextvars.ContextVar("current_setup_unique", default=None)
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -73,6 +78,15 @@ NOTIFY_FOR_TRANSLATION_KEYS = [
 
 SLOW_SETUP_WARNING = 10
 SLOW_SETUP_MAX_WAIT = 300
+
+
+class SetupPhases(StrEnum):
+    """Constants for setup time measurements."""
+
+    TOTAL = "total"
+    BASE_PLATFORM = "base_platform"
+    IMPORT_PLATFORMS = "import_platforms"
+    PLATFORMS = "platforms"
 
 
 class EventComponentLoaded(TypedDict):
@@ -358,7 +372,7 @@ async def _async_setup_component(  # noqa: C901
             translation.async_load_integrations(hass, integration_set)
         )
 
-    with async_start_setup(hass, integration_set):
+    with async_start_setup(hass, domain, SetupPhases.TOTAL):
         if hasattr(component, "PLATFORM_SCHEMA"):
             # Entity components have their own warning
             warn_task = None
@@ -628,25 +642,41 @@ def async_get_loaded_integrations(hass: core.HomeAssistant) -> set[str]:
 
 @contextlib.contextmanager
 def async_start_setup(
-    hass: core.HomeAssistant, components: Iterable[str]
+    hass: core.HomeAssistant, full_name: str, phase: SetupPhases
 ) -> Generator[None, None, None]:
     """Keep track of when setup starts and finishes."""
-    setup_started = hass.data.setdefault(DATA_SETUP_STARTED, {})
+    import pprint
+
+    pprint.pprint(["async_start_setup", full_name, phase, current_setup_unique.get()])
+    hass_data = hass.data
+    integration = full_name.partition(".")[0]
+    setup_started: dict[str, float] = hass_data.setdefault(DATA_SETUP_STARTED, {})
+    setup_time: dict[str, dict[SetupPhases, float]] = hass_data.setdefault(
+        DATA_SETUP_TIME, {}
+    )
     started = time.monotonic()
-    unique_components: dict[str, str] = {}
-    for domain in components:
-        unique = ensure_unique_string(domain, setup_started)
-        unique_components[unique] = domain
+    add_timing = True
+
+    if phase is SetupPhases.TOTAL:
+        unique = ensure_unique_string(full_name, setup_started)
+        current_setup_unique.set(unique)
         setup_started[unique] = started
+    elif unique := current_setup_unique.get():
+        # Do not add timing for platform setup
+        # if its already being recorded in total
+        # We only want to add time for SetupPhases.PLATFORMS
+        # if it happens outside of async_setup_component (e.g. Total)
+        add_timing = phase is not SetupPhases.PLATFORMS
+    else:
+        unique = ensure_unique_string(full_name, setup_started)
 
     yield
 
-    setup_time: dict[str, float] = hass.data.setdefault(DATA_SETUP_TIME, {})
     time_taken = time.monotonic() - started
-    for unique, domain in unique_components.items():
+
+    if phase is SetupPhases.TOTAL:
         del setup_started[unique]
-        integration = domain.partition(".")[0]
-        if integration in setup_time:
-            setup_time[integration] += time_taken
-        else:
-            setup_time[integration] = time_taken
+
+    if add_timing:
+        timings = setup_time.setdefault(integration, {})
+        timings[phase] = timings.get(phase, 0) + time_taken
