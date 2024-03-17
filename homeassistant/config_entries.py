@@ -1841,16 +1841,15 @@ class ConfigEntries:
         """Forward the setup of an entry to platforms."""
         integration = await loader.async_get_integration(self.hass, entry.domain)
         await integration.async_get_platforms(platforms)
-        with async_start_setup(self.hass, entry.domain, SetupPhases.PLATFORMS):
-            await asyncio.gather(
-                *(
-                    create_eager_task(
-                        self.async_forward_entry_setup(entry, platform),
-                        name=f"config entry forward setup {entry.title} {entry.domain} {entry.entry_id} {platform}",
-                    )
-                    for platform in platforms
+        await asyncio.gather(
+            *(
+                create_eager_task(
+                    self.async_forward_entry_setup(entry, platform),
+                    name=f"config entry forward setup {entry.title} {entry.domain} {entry.entry_id} {platform}",
                 )
+                for platform in platforms
             )
+        )
 
     async def async_forward_entry_setup(
         self, entry: ConfigEntry, domain: Platform | str
@@ -1873,7 +1872,8 @@ class ConfigEntries:
 
         integration = await loader.async_get_integration(self.hass, domain)
 
-        await entry.async_setup(self.hass, integration=integration)
+        with async_start_setup(self.hass, entry.domain, SetupPhases.PLATFORMS):
+            await entry.async_setup(self.hass, integration=integration)
         return True
 
     async def async_unload_platforms(

@@ -947,8 +947,8 @@ async def _async_set_up_integrations(
     timings = {
         domain: (
             timings.get(SetupPhases.TOTAL, 0)
-            # + timings.get(SetupPhases.PLATFORMS, 0)
-            # - integration.platform_import_time
+            + timings.get(SetupPhases.PLATFORMS, 0)
+            - integration.platform_import_time
             # - timings.get(SetupPhases.BASE_PLATFORM, 0)
         )
         for domain, timings in setup_time.items()
