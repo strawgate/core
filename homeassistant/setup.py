@@ -665,7 +665,7 @@ def async_start_setup(
         # if its already being recorded in total
         # We only want to add time for SetupPhases.PLATFORMS
         # if it happens outside of async_setup_component (e.g. Total)
-        add_timing = phase is not SetupPhases.PLATFORMS
+        add_timing = True  # phase is not SetupPhases.PLATFORMS
     else:
         unique = ensure_unique_string(full_name, setup_started)
 

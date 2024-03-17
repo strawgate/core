@@ -8,7 +8,7 @@ from functools import partial
 from itertools import chain
 import logging
 import logging.handlers
-from operator import contains
+from operator import contains, itemgetter
 import os
 import platform
 import sys
@@ -936,20 +936,32 @@ async def _async_set_up_integrations(
 
     watcher.async_stop()
 
+    for domain in setup_time:
+        if integration := integration_cache.get(domain):
+            _LOGGER.warning(
+                "Platform import time: %s = %s",
+                domain,
+                integration.platform_import_time,
+            )
+
+    timings = {
+        domain: (
+            timings.get(SetupPhases.TOTAL, 0)
+            # + timings.get(SetupPhases.PLATFORMS, 0)
+            # - integration.platform_import_time
+            # - timings.get(SetupPhases.BASE_PLATFORM, 0)
+        )
+        for domain, timings in setup_time.items()
+        if (integration := integration_cache.get(domain))
+    }
+
     _LOGGER.debug(
         "Integration setup times: %s",
-        {
-            domain: (
-                timings.get(SetupPhases.TOTAL, 0)
-                + timings.get(SetupPhases.PLATFORMS, 0)
-                - integration.platform_import_time
-                - timings.get(SetupPhases.BASE_PLATFORM, 0)
-            )
-            for domain, timings in sorted(
-                setup_time.items(),
-                key=lambda items: items[1].get(SetupPhases.TOTAL, 0),
+        dict(
+            sorted(
+                timings.items(),
+                key=itemgetter(1),
                 reverse=True,
             )
-            if (integration := integration_cache.get(domain))
-        },
+        ),
     )
