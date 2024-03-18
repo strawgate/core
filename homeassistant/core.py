@@ -67,6 +67,7 @@ from .const import (
     EVENT_HOMEASSISTANT_START,
     EVENT_HOMEASSISTANT_STARTED,
     EVENT_HOMEASSISTANT_STOP,
+    EVENT_LOGGING_CHANGED,
     EVENT_SERVICE_REGISTERED,
     EVENT_SERVICE_REMOVED,
     EVENT_STATE_CHANGED,
@@ -405,6 +406,7 @@ class HomeAssistant:
         self.import_executor = InterruptibleThreadPoolExecutor(
             max_workers=1, thread_name_prefix="ImportExecutor"
         )
+        self.debug = _LOGGER.isEnabledFor(logging.DEBUG)
 
     @property
     def _active_tasks(self) -> set[asyncio.Future[Any]]:
@@ -474,6 +476,18 @@ class HomeAssistant:
 
         await self._stopped.wait()
         return self.exit_code
+
+    @callback
+    def _async_logging_changed(self, _: Event) -> None:
+        """Handle logging change events."""
+        self.debug = _LOGGER.isEnabledFor(logging.DEBUG)
+
+    @callback
+    def async_listen_logging_changed(self) -> None:
+        """Listen for logging changed."""
+        self.bus.async_listen(
+            EVENT_LOGGING_CHANGED, self._async_logging_changed, run_immediately=True
+        )
 
     async def async_start(self) -> None:
         """Finalize startup from inside the event loop.
@@ -1380,7 +1394,7 @@ class EventBus:
 
         event = Event(event_type, event_data, origin, time_fired, context)
 
-        if _LOGGER.isEnabledFor(logging.DEBUG):
+        if self._hass.debug:
             _LOGGER.debug("Bus:Handling %s", event)
 
         if not listeners and not match_all_listeners:

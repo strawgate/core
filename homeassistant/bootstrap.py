@@ -558,6 +558,7 @@ def async_enable_logging(
         _LOGGER.error("Unable to set up error log %s (access denied)", err_log_path)
 
     async_activate_log_queue_handler(hass)
+    hass.async_listen_logging_changed()
 
 
 async def async_mount_local_lib_path(config_dir: str) -> str:
