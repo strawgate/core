@@ -1250,6 +1250,9 @@ TARGET_SERVICE_FIELDS = {
 }
 
 
+_HAS_ENTITY_SERVICE_FIELD = has_at_least_one_key(*ENTITY_SERVICE_FIELDS)
+
+
 def _make_entity_service_schema(schema: dict, extra: int) -> vol.Schema:
     """Create an entity service schema."""
     return vol.Schema(
@@ -1263,7 +1266,7 @@ def _make_entity_service_schema(schema: dict, extra: int) -> vol.Schema:
                 },
                 extra=extra,
             ),
-            has_at_least_one_key(*ENTITY_SERVICE_FIELDS),
+            _HAS_ENTITY_SERVICE_FIELD,
         )
     )
 
