@@ -110,9 +110,9 @@ async def async_set_value(entity: NumberEntity, service_call: ServiceCall) -> No
             },
         )
 
-    # With a min step size of 0.001, the modulus of value - offset
-    # should never be greater than 0.001
-    if round((value - entity.min_value) % entity.step, 3) >= 0.001:
+    # With a min step size of 0.001, the modulus of (value - offset) * 1000
+    # and the stepsize * 100 should never be greater than 1
+    if round((value - entity.min_value) * 1000 % (entity.step * 1000), 3) >= 1:
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="invalid_step_value",
