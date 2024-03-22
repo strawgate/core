@@ -326,9 +326,11 @@ class IntegrationSensor(RestoreSensor):
 
             try:
                 if old_state:
+                    # state has changed, we recover old_state from the event
                     old_state_state = old_state.state
                     old_last_reported = old_state.last_reported
                 else:
+                    # event state reported without any state change
                     old_state_state = new_state.state
 
                 # integration as the Riemann integral of previous measures.
