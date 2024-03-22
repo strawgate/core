@@ -382,7 +382,7 @@ async def test_set_value(hass: HomeAssistant, enable_custom_integrations: None) 
     assert exc.value.translation_key == "invalid_step_value"
     assert (
         str(exc.value)
-        == "Value 60.5 for number.test is not a valid step value in range 0.0 - 100.0 with step 1.0"
+        == "Value 60.5 for number.test is not a valid value in range 0.0 - 100.0 with step 1.0"
     )
 
     await hass.async_block_till_done()
@@ -401,7 +401,7 @@ async def test_set_value(hass: HomeAssistant, enable_custom_integrations: None) 
     assert exc.value.translation_key == "invalid_step_value"
     assert (
         str(exc.value)
-        == "Value 60.001 for number.test is not a valid step value in range 0.0 - 100.0 with step 1.0"
+        == "Value 60.001 for number.test is not a valid value in range 0.0 - 100.0 with step 1.0"
     )
 
 
