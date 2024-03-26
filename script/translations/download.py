@@ -17,9 +17,8 @@ FILENAME_FORMAT = re.compile(r"strings\.(?P<suffix>\w+)\.json")
 DOWNLOAD_DIR = pathlib.Path("build/translations-download").absolute()
 
 
-def _get_lokalise_command() -> list[str]:
+def _get_lokalise_command_args() -> list[str]:
     return [
-        "lokalise2",
         "--token",
         get_lokalise_token(),
         "--project-id",
@@ -42,7 +41,8 @@ def run_download_binary() -> None:
     print("Downloading translations.")
     run = subprocess.run(
         [
-            *_get_lokalise_command(),
+            "./bin/lokalise2",
+            *_get_lokalise_command_args(),
             DOWNLOAD_DIR,
         ],
         check=False,
@@ -64,7 +64,9 @@ def run_download_docker():
             f"{DOWNLOAD_DIR}:/opt/dest/locale",
             "--rm",
             f"lokalise/lokalise-cli-2:{CLI_2_DOCKER_IMAGE}",
-            *_get_lokalise_command(),
+            # Lokalise command
+            "lokalise2",
+            *_get_lokalise_command_args(),
             "/opt/dest",
         ],
         check=False,
