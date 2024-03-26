@@ -17,6 +17,42 @@ FILENAME_FORMAT = re.compile(r"strings\.(?P<suffix>\w+)\.json")
 DOWNLOAD_DIR = pathlib.Path("build/translations-download").absolute()
 
 
+def _get_lokalise_command() -> list[str]:
+    return [
+        "lokalise2",
+        "--token",
+        get_lokalise_token(),
+        "--project-id",
+        CORE_PROJECT_ID,
+        "file",
+        "download",
+        CORE_PROJECT_ID,
+        "--original-filenames=false",
+        "--replace-breaks=false",
+        "--export-empty-as",
+        "skip",
+        "--format",
+        "json",
+        "--unzip-to",
+    ]
+
+
+def run_download_binary() -> None:
+    """Run the lokalise2 binary to download the translations."""
+    print("Downloading translations.")
+    run = subprocess.run(
+        [
+            *_get_lokalise_command(),
+            DOWNLOAD_DIR,
+        ],
+        check=False,
+    )
+    print()
+
+    if run.returncode != 0:
+        raise ExitApp("Failed to download translations")
+
+
 def run_download_docker():
     """Run the Docker image to download the translations."""
     print("Running Docker to download latest translations.")
@@ -28,22 +64,7 @@ def run_download_docker():
             f"{DOWNLOAD_DIR}:/opt/dest/locale",
             "--rm",
             f"lokalise/lokalise-cli-2:{CLI_2_DOCKER_IMAGE}",
-            # Lokalise command
-            "lokalise2",
-            "--token",
-            get_lokalise_token(),
-            "--project-id",
-            CORE_PROJECT_ID,
-            "file",
-            "download",
-            CORE_PROJECT_ID,
-            "--original-filenames=false",
-            "--replace-breaks=false",
-            "--export-empty-as",
-            "skip",
-            "--format",
-            "json",
-            "--unzip-to",
+            *_get_lokalise_command(),
             "/opt/dest",
         ],
         check=False,
@@ -137,7 +158,7 @@ def run():
     """Run the script."""
     DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-    run_download_docker()
+    run_download_binary()
 
     delete_old_translations()
 
